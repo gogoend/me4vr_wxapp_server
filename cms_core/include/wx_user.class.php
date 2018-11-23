@@ -23,6 +23,7 @@ class wx_user extends user
     
     public function build_wx_request()
     {
+        global $appid,$secret;
         $request_data = [
             "appid" => $appid,
             "secret" => $secret,
