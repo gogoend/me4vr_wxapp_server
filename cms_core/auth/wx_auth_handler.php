@@ -6,6 +6,7 @@
  * @author: JackieHan
  */
 header("Content-type:text/html;charset=utf-8");
+header("Content-type:application/json");
 require dirname(__FILE__).'/../include/wx_user.class.php';
 $wxlogin=new wx_user();
 if(isset($_GET['code'])){

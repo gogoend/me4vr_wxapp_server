@@ -9,7 +9,6 @@ require_once 'public_function.inc.php';
 require 'user.class.php';
 require 'wx_biz_data_crypt.class.php';
 require dirname(__FILE__).'/../config/wxapp.config.php';
-
 class wx_user extends user
 {
 
@@ -24,6 +23,10 @@ class wx_user extends user
     public function build_wx_request()
     {
         global $appid,$secret;
+        if(!isset($appid)||!isset($secret)){
+            header("Content-type:application/json");
+            die('{"error":"5000","msg":"登录失败：服务器无凭据，请联系管理员重新配置相关凭据。"}');
+        }
         $request_data = [
             "appid" => $appid,
             "secret" => $secret,
@@ -32,7 +35,7 @@ class wx_user extends user
         ];
         $_GET['code']=null;
         unset($_GET['code']);
-        
+
         $url = "https://api.weixin.qq.com/sns/jscode2session?" . http_build_query($request_data);
         
         $ch = curl_init();
@@ -45,20 +48,16 @@ class wx_user extends user
         
         $response_json = curl_exec($ch);
         if ($response_json == false) {
-            echo "登录失败，错误信息" . curl_error($ch);
             curl_close($ch);
-            return false;
+            die( '{"error":"5001","msg":"登录失败：小程序服务器与无法接入微信服务器，请联系管理员检查网络连接。"}' );
         } else {
-            $response = json_decode($response_json); // 数组
+            $response = json_decode($response_json); // 返回数组
             if (! empty($response->errcode) || isset($response->errcode)) {
-                echo "登陆失败，错误代码：" . $response->errcode;
                 curl_close($ch);
-                
-                return false;
+                die('{"error":"5002","msg":"登录失败：微信服务器认证失败。返回的错误代码：'.$response->errcode.'"}');
             } else {
-                //echo "登陆成功！\n";
+                //处理登录成功
                 curl_close($ch);
-                
                 return $response;
             }
         }
@@ -87,34 +86,14 @@ class wx_user extends user
             if ($if_u_exist_stmt->rowCount() == 0) {
                 
                 //写入第三方关系表
-                $new_wx_u_sql = 'INSERT INTO hp_3rd_relation
-                (
-                vendor_id,
-                open_id
-                )
-                VALUES
-                (?,?)
-                ';
+                $new_wx_u_sql = 'INSERT INTO hp_3rd_relation (vendor_id,open_id) VALUES (?,?)';
                 $new_wx_u_stmt = $pdo->prepare($new_wx_u_sql);
-                $new_wx_u_array = [
-                    1,
-                    $this->open_id
-                ];
+                $new_wx_u_array = [1,$this->open_id];
                 $new_wx_u_stmt->execute($new_wx_u_array);
                 
                 //进行用户注册流程
-                $wx_reg_sql = 'INSERT INTO hp_user
-                (u_name,
-                u_pwd,
-                u_salt,
-                ug_id,
-                u_email,
-                u_reg_time,
-                uuid)
-                VALUES
-                (?,?,?,?,?,?,?)';
+                $wx_reg_sql = 'INSERT INTO hp_user (u_name,u_pwd,u_salt,ug_id,u_email,u_reg_time,uuid) VALUES (?,?,?,?,?,?,?)';
                 $wx_reg_stmt = $pdo->prepare($wx_reg_sql);
-                
                 $this->name = 'wx_' . get_random_char(16, 'bcdefghjkmnpqrstwxy346789');
                 $this->pwd = 'wx_user_null_password';
                 $this->salt = 'wx_null';
@@ -122,49 +101,27 @@ class wx_user extends user
                 $this->email = $this->name . '@null.null';
                 $this->reg_time = now();
                 $this->uuid=get_uuid();
-                
-                $wx_reg_array = [
-                    $this->name,
-                    $this->pwd,
-                    $this->salt,
-                    $this->group,
-                    $this->email,
-                    $this->reg_time,
-                    $this->uuid
-                ];
+                $wx_reg_array = [$this->name,$this->pwd,$this->salt,$this->group,$this->email,$this->reg_time,$this->uuid];
+
                 $wx_reg_stmt->execute($wx_reg_array);
                 //获得刚刚注册的用户的id
-                $get_id_sql = '
-                SELECT u_id FROM hp_user WHERE u_name=?
-                ';
+                $get_id_sql = 'SELECT u_id FROM hp_user WHERE u_name=?';
                 $get_id_stmt = $pdo->prepare($get_id_sql);
-                $get_id_array = array(
-                    $this->name
-                );
+                $get_id_array = array($this->name);
                 $get_id_stmt->execute($get_id_array);
                 $get_id_result = $get_id_stmt->fetch(PDO::FETCH_ASSOC);
                 $this->id = $get_id_result['u_id'];
                 
                 //将用户id插入到第三方关系表中，与open_id一一对应
-                $wx_reg_id_sql = '
-                UPDATE hp_3rd_relation SET u_id=? WHERE open_id=?
-                ';
+                $wx_reg_id_sql = 'UPDATE hp_3rd_relation SET u_id=? WHERE open_id=?';
                 $wx_reg_id_stmt = $pdo->prepare($wx_reg_id_sql);
-                $wx_reg_id_array = [
-                    $this->id,
-                    $this->open_id
-                ];
+                $wx_reg_id_array = [$this->id,$this->open_id];
                 $wx_reg_id_stmt->execute($wx_reg_id_array);
                 
                 //将用户id写入用户登录状态表中
-                $wx_user_1st_login_sql = '
-                INSERT INTO hp_user_login (u_id,u_status) VALUES (?,?)
-                ';
+                $wx_user_1st_login_sql = 'INSERT INTO hp_user_login (u_id,u_status) VALUES (?,?)';
                 $wx_user_1st_login_stmt = $pdo->prepare($wx_user_1st_login_sql);
-                $wx_user_1st_login_array = [
-                    $this->id,
-                    1
-                ];
+                $wx_user_1st_login_array = [$this->id,1];
                 $wx_user_1st_login_stmt->execute($wx_user_1st_login_array);
             }
             
@@ -181,21 +138,13 @@ class wx_user extends user
             //更新最近一次登录时间
             $update_login_time_sql = "UPDATE hp_user_login SET last_login_time=? WHERE u_id=?";
             $update_login_time_stmt = $pdo->prepare($update_login_time_sql);
-            $update_login_time_array = [
-                $now,
-                $this->id
-            ];
+            $update_login_time_array = [$now,$this->id];
             $update_login_time_stmt->execute($update_login_time_array);
             
             // 添加一条登录记录
             $update_login_record_sql = 'INSERT INTO hp_user_login_record (u_id,login_time,login_ip,login_channel) VALUES (?,?,?,?)';
             $update_login_record_stmt = $pdo->prepare($update_login_record_sql);
-            $update_login_record_array = [
-                $this->id,
-                $now,
-                $this->get_ip(),
-                '1'
-            ];
+            $update_login_record_array = [$this->id,$now,$this->get_ip(),'1'];
             $update_login_record_stmt->execute($update_login_record_array);
 
             //会话开始
@@ -207,6 +156,7 @@ class wx_user extends user
             
             //向前端返回登录成功的消息
             $go_back_value=[
+                "error"=>0,
                 "msg"=>"欢迎来到Hello全视界",
                 "s_id"=>session_id()
             ];

@@ -21,7 +21,7 @@ class user{
     public $login_ip;
     public $nick_name;
     public $uuid;
-    
+    public $error;
     public $error_msg=[
         "1000"=>"您输入的用户名或密码有误",
         "1001"=>"您输入的验证码有误",

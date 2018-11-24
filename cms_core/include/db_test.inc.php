@@ -5,18 +5,24 @@
 *@author:JackieHan<gogoend@qq.com>
 */
 
- function db_test(){      
+function db_test(){
      $db_config= dirname(__FILE__).'/../config/mydb.config.php';
      if (file_exists($db_config)) {
-     
      try{
-         require dirname(__FILE__).'/../config/mydb.config.php';
+         require $db_config;
          $pdo=new PDO($dsn,$mysql_username,$mysql_password);
          $pdo=null;
      }catch (Exception $e){
-         header("Location:/oobe");
+         //echo $e;
+         die('{
+            "error":"5101",
+            "msg":"数据库无法连接，请检查登录凭据，以及数据库安装是否正确。"
+         }');
      }
  } else {
-         header("Location:/oobe");
+         die('{
+            "error":"5100",
+            "msg":"数据库配置文件不存在，请重新配置。"
+         }');
      }
  }
