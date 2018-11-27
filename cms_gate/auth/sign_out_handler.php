@@ -5,7 +5,7 @@
 *@author:JackieHan<gogoend@qq.com>
 */
 
-require dirname(__FILE__).'/../include/sign_up.class.php';
+require dirname(__FILE__).'/../../cms_core/include/sign_up.class.php';
 header("Content-type:text/html;charset=utf-8");
 $sign_out=new admin_sign_in();
 $sign_out->sign_out();

@@ -7,7 +7,7 @@
  */
 header("Content-type:text/html;charset=utf-8");
 header("Content-type:application/json");
-require dirname(__FILE__).'/../include/wx_user.class.php';
+require dirname(__FILE__).'/../../cms_core/include/wx_user.class.php';
 $wxlogin=new wx_user();
 if(isset($_GET['code'])){
 $wxlogin->wx_user_handler();

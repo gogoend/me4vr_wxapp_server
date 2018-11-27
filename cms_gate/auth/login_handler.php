@@ -4,7 +4,7 @@
 *@date:2017年12月9日 下午4:32:25
 *@author:JackieHan<gogoend@qq.com>
 */
-require dirname(__FILE__).'/../include/user.class.php';
+require dirname(__FILE__).'/../../cms_core/include/user.class.php';
 header("Content-type:text/html;charset=utf-8");
 $sign_in=new user();
 $sign_in->user_login();
