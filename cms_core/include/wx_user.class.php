@@ -246,7 +246,7 @@ class wx_user extends user
         }else{
             echo $err_code;
         }
-    }    
+    }
 }
 
 
