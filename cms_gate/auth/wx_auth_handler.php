@@ -5,7 +5,6 @@
  * @date: 2018年5月26日 下午1:30:18
  * @author: JackieHan
  */
-header("Content-type:text/html;charset=utf-8");
 header("Content-type:application/json");
 require dirname(__FILE__).'/../../cms_core/include/wx_user.class.php';
 $wxlogin=new wx_user();
