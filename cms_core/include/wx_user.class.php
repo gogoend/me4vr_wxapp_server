@@ -173,9 +173,10 @@ class wx_user extends user
         $pc=new WXBizDataCrypt($appid,$session_key);
         $err_code=$pc->decryptData($encrypted_data,$iv,$data);
         if($err_code==0){
-            echo $data;
+            //echo $data;
             $this->wx_user_info=json_decode($data);
-            //$this->wx_user_info->nickName;
+            //echo json_last_error();
+            //echo $this->wx_user_info->nickName;
                         
             require dirname(__FILE__) . '/../config/mydb.config.php';
             

@@ -33,8 +33,6 @@ class user
 
     public $uuid;
 
-    public $error;
-
     public $error_msg = [
         "1000" => "您输入的用户名或密码有误",
         "1001" => "您输入的验证码有误",
@@ -46,7 +44,62 @@ class user
         return $this->login_ip = getenv('REMOTE_ADDR');
     }
 
-    
+    // 查询用户信息
+    public function get_user($uid){
+        require dirname(__FILE__) . '/../config/mydb.config.php';
+
+        $user_sql = '
+SELECT
+  `hp_user`.`u_id`,
+  `hp_user`.`u_name`,
+  `hp_user`.`u_pwd`,
+  `hp_user`.`u_salt`,
+  `hp_user`.`ug_id`,
+  `hp_user`.`u_email`,
+  `hp_user_login`.`u_status`,
+  `hp_user`.`u_reg_time`,
+  `hp_user`.`u_nickname`,
+  `hp_user`.`uuid`,
+  `hp_user_login`.`last_login_time`
+FROM
+  `hp_user`
+  INNER JOIN `hp_user_login` ON `hp_user`.`u_id` = `hp_user_login`.`u_id`
+WHERE
+  `hp_user`.`u_id` = :u_id;
+';
+$pdo = new PDO($dsn, $mysql_username, $mysql_password);
+
+            $user_stmt = $pdo->prepare($user_sql);
+            $user_data_array = array(
+                ":u_id" => $uid
+            );
+            try{
+                $user_stmt->execute($user_data_array);
+                if ($user_stmt->rowCount() == 0) {
+                    echo $this->error_msg['1000'];
+                    $pdo = null;
+                    return false;
+                }else{
+                    $result=$user_stmt->fetch(PDO::FETCH_ASSOC);
+                    $this->id = $result['u_id'];
+                    $this->name = $result['u_name'];
+                    $this->pwd = $result['u_pwd'];
+                    $this->salt = $result['u_salt'];
+                    $this->group = $result['ug_id'];
+                    $this->email = $result['u_email'];
+                    $this->status = $result['u_status'];
+                    $this->reg_time = $result['u_reg_time'];
+                    $this->nick_name= $result['u_nickname'];
+                    $this->uuid=$result['uuid'];
+                    $this->last_login_time = $result['last_login_time'];
+                    unset($result);
+                    return $this;
+            }
+        }catch (Exception $e) {
+            die($e->getMessage());
+        }
+
+    }
     
     // 用户登录方法
     public function user_login()
@@ -68,7 +121,8 @@ SELECT
   `hp_user`.`u_email`,
   `hp_user_login`.`u_status`,
   `hp_user`.`u_reg_time`,
-  `hp_user_login`.`last_login_time`  
+  `hp_user`.`u_nickname`,
+  `hp_user_login`.`last_login_time` 
 FROM
   `hp_user`
   INNER JOIN `hp_user_login` ON `hp_user`.`u_id` = `hp_user_login`.`u_id`
